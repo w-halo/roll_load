@@ -24,6 +24,7 @@
     width: 100%;
   }
   .page {
+    height:100%;
     box-sizing: border-box;
     position: relative;
     background-color: #fff;
@@ -34,9 +35,6 @@
     -webkit-box-orient: vertical;
     -webkit-flex-direction: column;
     flex-direction: column;
-  }
-  .container p{
-    line-height: 5;
   }
   .container{
     background-color: #f6f6f6;
@@ -79,6 +77,13 @@
   .details-page{
     background-color: #fafbca;
   }
+  p{
+    text-align: center;
+    color: #333;
+    font-size: 16px;
+    line-height: 5;
+    margin: 0 1rem;
+  }
   </style>
 <body>
   <div class="roll_load">
@@ -105,8 +110,9 @@
 <script type="text/javascript" src="../js/roll_load.js"></script>
 <script>
   window.onload=function(){
-    var str = '加载后可见';
+    var str = '<p>加载后可见</p>';
     var first = true;
+    rollLoad.toTop();
     rollLoad.init({
       callback: function(index) {
         if (first && index === 1) {

@@ -19,7 +19,7 @@ options={
 方法 
 init (初始化)
 resizeHeight(重新获取page[index]高度)
+pageTo(跳到index的page)
+toTop(回到顶部)
 
 author:wyc
-
-新人

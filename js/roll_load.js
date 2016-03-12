@@ -10,17 +10,55 @@
 //rollLoad方法 init (初始化) resizeHeight(重新获取page[index]高度)
 //author:wyc
 //time:2015.7.22
-var rollLoad = {
-	init: function(options) {
-		options = options || {};
-		var speed = options.speed || 200;
-		var roll_load = $(".roll_load");
-		roll_load.each(function(index, el) {
-			var element = this;
-			var pages = $(element).find(".page");
-			var index = options.index || 0;
-			var maxIndex = pages.length - 1;
-			var minHeight = $(window).height();
+;
+(function(window, $) {
+	var element,
+		pages,
+		index,
+		maxIndex,
+		speed,
+		minHeight,
+		options;
+	var noop = function() {};
+	var offloadFn = function(fn) {
+		setTimeout(fn || noop, 0)
+	};
+	var translate = function(index, dist, speed) {
+		var slide = pages[index];
+		var style = slide && slide.style;
+		if (!style) return;
+		style.webkitTransitionDuration =
+			style.MozTransitionDuration =
+			style.msTransitionDuration =
+			style.OTransitionDuration =
+			style.transitionDuration = speed + 'ms';
+		style.webkitTransform = 'translate(0,' + dist + 'px)' + 'translateZ(0)';
+		style.msTransform =
+			style.MozTransform =
+			style.OTransform = 'translateY(' + dist + 'px)';
+	}
+	var hastransitions = (function(temp) {
+		var props = ['transitionProperty', 'WebkitTransition', 'MozTransition', 'OTransition', 'msTransition'];
+		for (var i in props)
+			if (temp.style[props[i]] !== undefined) return true;
+		return false;
+	})(document.createElement('swipe'));
+
+	var rollLoad = {
+		init: function(ops) {
+			options = ops || {};
+			var that = this;
+			element = document.querySelector(".roll_load");
+			if (!element) {
+				throw new Error("Target DOM is not exist");
+				return;
+			}
+			pages = $(element).find(".page");
+			index = options.index || 0;
+			maxIndex = pages.length - 1;
+			speed = options.speed || 200;
+			minHeight = $(window).height();
+
 			var isollLoad = undefined;
 			var start = {};
 			var delta = {};
@@ -29,33 +67,10 @@ var rollLoad = {
 				"transform": "translateY(0px) translateZ(0px)",
 				"transition": "transform 200ms easy-out",
 				"-webkit-transition": "-webkit-transform 200ms easy-out",
-				"min-height": minHeight
+				"min-height": minHeight,
+				"height": "auto"
 			})
-			$(element).height($(pages[index]).height());
-			var noop = function() {};
-			var offloadFn = function(fn) {
-				setTimeout(fn || noop, 0)
-			};
-			var translate = function(index, dist, speed) {
-				var slide = pages[index];
-				var style = slide && slide.style;
-				if (!style) return;
-				style.webkitTransitionDuration =
-					style.MozTransitionDuration =
-					style.msTransitionDuration =
-					style.OTransitionDuration =
-					style.transitionDuration = speed + 'ms';
-				style.webkitTransform = 'translate(0,' + dist + 'px)' + 'translateZ(0)';
-				style.msTransform =
-					style.MozTransform =
-					style.OTransform = 'translateY(' + dist + 'px)';
-			}
-			var hastransitions = (function(temp) {
-				var props = ['transitionProperty', 'WebkitTransition', 'MozTransition', 'OTransition', 'msTransition'];
-				for (var i in props)
-					if (temp.style[props[i]] !== undefined) return true;
-				return false;
-			})(document.createElement('swipe'));
+			this.resizeHeight();
 			var events = {
 				handleEvent: function(event) {
 					switch (event.type) {
@@ -111,10 +126,10 @@ var rollLoad = {
 					var touches = event.touches[0];
 					// measure change in x and y
 					delta = {
-						x: touches.pageX - start.x,
-						y: touches.pageY - start.y
-					}
-					// determine if scrolling test has run - one time test
+							x: touches.pageX - start.x,
+							y: touches.pageY - start.y
+						}
+						// determine if scrolling test has run - one time test
 					if (isollLoad == undefined) {
 						isollLoad = (
 							(Math.abs(delta.y) > Math.abs(delta.x)) && ((delta.y < 0 && index < maxIndex) || (delta.y > 0 && index > 0)) &&
@@ -175,8 +190,8 @@ var rollLoad = {
 								translate(index, nowH - lastH, speed);
 								index--;
 							}
-							var nh = $(pages[index]).height();
-							$(element).height(nh);
+							that.resizeHeight();
+							var nh = $(pages[i || index]).height();
 							!direction && nh > minHeight && $(window).scrollTop(nh - minHeight);
 							options.callback && options.callback(+index, pages[index]);
 						} else {
@@ -209,13 +224,33 @@ var rollLoad = {
 				element.addEventListener('otransitionend', events, false);
 				element.addEventListener('transitionend', events, false);
 			}
-		});
-	},
-	resizeHeight: function(index) {
-		var roll_load = $(".roll_load");
-		roll_load.each(function(i, el) {
-			var pages = $(this).find(".page");
-			$(this).height($(pages[index]).height());
-		});
+
+		},
+		resizeHeight: function(i) {
+			$(element).height($(pages[i || index]).height());
+		},
+		pageTo: function(idx) {
+			var idx = +idx || 0;
+			if (!index||idx == index) {
+				return;
+			}
+			var nowH = 0;
+			for (var i = 0; i < idx; i++) {
+				var iH = $(pages[i]).height();
+				nowH -= iH;
+			}
+			for (var j = index; (idx > index&&j<=idx)||(idx < index&& j>=idx); idx > index ? j++ : j--) {
+				translate(j, nowH, speed);
+			}
+			index=idx;
+			this.resizeHeight();
+			var nh = $(pages[index]).height();
+			nh > minHeight && $(window).scrollTop(nh - minHeight);
+			options.callback && options.callback(+index, pages[index]);
+		},
+		toTop: function() {
+			this.pageTo(0);
+		}
 	}
-}
+	window.rollLoad = rollLoad;
+})(window, $)
